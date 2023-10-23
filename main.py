@@ -63,5 +63,7 @@ def get_emoji_count_by_guild_id(
 @app.get("/emoji")
 async def get_emoji_stats():
     result = get_emoji_count_by_guild_id()
-    print(result)
-    return {"message": "Hello World"}
+    emoji_stats_dic = {}
+    for stats_tuple in result:
+        emoji_stats_dic[stats_tuple[0]] = stats_tuple[1]
+    return emoji_stats_dic
