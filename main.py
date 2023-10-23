@@ -60,7 +60,7 @@ def get_emoji_count_by_guild_id(
     return result
 
 
-@app.get("/emoji")
+@app.get("/emoji-stats")
 async def get_emoji_stats():
     result = get_emoji_count_by_guild_id()
     emoji_stats_dic = {}
