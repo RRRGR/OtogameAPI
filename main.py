@@ -73,10 +73,10 @@ async def get_emoji_usage_rank(
 async def get_emoji_member_rank(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
     guild_id: int,
-    PartialEmoji_str: str | None = None,
+    emoji: str | None = None,
     hour: int = 720,
 ):
-    result = db.get_emoji_member_rank(guild_id, PartialEmoji_str, hour)
+    result = db.get_emoji_member_rank(guild_id, emoji, hour)
     res_dic = {}
     rank_list = []
     rank = 1
