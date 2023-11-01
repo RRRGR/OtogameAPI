@@ -76,3 +76,116 @@ def get_emoji_member_rank(guild_id: int, PartialEmoji_str: str | None, hour: int
     cur.close()
     conn.close()
     return result
+
+
+def insert_game_title(game_title: str) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO friend_code_games (title) VALUES (?);", (game_title,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return
+
+
+def delete_game_title(game_title: str) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM friend_code_games WHERE game_id = ?;", (game_title,))
+    cur.close()
+    conn.close()
+    return
+
+
+def get_game_titles():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT title FROM friend_code_games")
+    result = cur.fetchall()
+    return result
+
+
+def get_friend_code_by_id_and_title(
+    user_id: int,
+    game_title: str,
+):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, friend_code FROM friend_codes WHERE user_id = ? AND game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
+        (
+            user_id,
+            game_title,
+        ),
+    )
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_friend_code_by_title(
+    game_title: str,
+):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, friend_code FROM friend_codes WHERE game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
+        (game_title,),
+    )
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_friend_code_by_id(
+    user_id: int,
+):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id, friend_code FROM friend_codes WHERE user_id = ?;",
+        (user_id,),
+    )
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def upsert_friend_code(user_id: int, game_title: str, friend_code: str) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    result = get_friend_code_by_id_and_title(user_id, game_title)
+    if result:
+        cur.execute(
+            "UPDATE friend_codes SET friend_code = ? WHERE user_id = ? AND game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
+            (
+                friend_code,
+                user_id,
+                game_title,
+            ),
+        )
+    else:
+        cur.execute(
+            "INSERT INTO friend_codes (user_id, game_id, friend_code) SELECT ?, (SELECT game_id FROM friend_code_games WHERE title = ?), ?;",
+            (user_id, game_title, friend_code),
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return
+
+
+def delete_friend_code(user_id: int, game_title: str) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM friend_codes WHERE user_id = ? AND game_id = (SELECT game_id FROM frined_code_games WHERE title = ?);",
+        (user_id, game_title),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return
