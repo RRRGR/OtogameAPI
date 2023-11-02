@@ -113,7 +113,7 @@ def get_friend_code_by_id_and_title(
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_id, friend_code FROM friend_codes WHERE user_id = ? AND game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
+        "SELECT fc.user_id, fcg.title, fc.friend_code FROM friend_codes fc JOIN friend_code_games fcg ON fc.game_id = fcg.game_id WHERE fc.user_id = ? AND fcg.title = ?;",
         (
             user_id,
             game_title,
@@ -131,7 +131,7 @@ def get_friend_code_by_title(
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_id, friend_code FROM friend_codes WHERE game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
+        "SELECT fc.user_id, fcg.title, fc.friend_code FROM friend_codes fc JOIN friend_code_games fcg ON fc.game_id = fcg.game_id WHERE fcg.title = ?;",
         (game_title,),
     )
     result = cur.fetchall()
@@ -146,8 +146,20 @@ def get_friend_code_by_id(
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_id, friend_code FROM friend_codes WHERE user_id = ?;",
+        "SELECT fc.user_id, fcg.title, fc.friend_code FROM friend_codes fc JOIN friend_code_games fcg ON fc.game_id = fcg.game_id WHERE fc.user_id = ?;",
         (user_id,),
+    )
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_friend_code():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT fc.user_id, fcg.title, fc.friend_code FROM friend_codes fc JOIN friend_code_games fcg ON fc.game_id = fcg.game_id;"
     )
     result = cur.fetchall()
     cur.close()

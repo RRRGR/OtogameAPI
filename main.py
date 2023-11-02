@@ -162,8 +162,8 @@ async def delete_friend_code(
 @app.get("/friend-code")
 async def get_friend_code(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
-    game_title: str | None,
     user_id: int | None = None,
+    game_title: str | None = None,
 ):
     if user_id is None and game_title is not None:
         result = db.get_friend_code_by_title(game_title)
@@ -171,14 +171,16 @@ async def get_friend_code(
         result = db.get_friend_code_by_id(user_id)
     elif user_id is not None and game_title is not None:
         result = db.get_friend_code_by_id_and_title(user_id, game_title)
+    else:
+        result = db.get_friend_code()
 
     res_dic = {}
     friend_code_list = []
-    res_dic["game_title"] = game_title
     for friend_code_tuple in result:
         friend_code_dic = {}
         friend_code_dic["user_id"] = friend_code_tuple[0]
-        friend_code_dic["friend_code"] = friend_code_tuple[1]
+        friend_code_dic["game_title"] = friend_code_tuple[1]
+        friend_code_dic["friend_code"] = friend_code_tuple[2]
         friend_code_list.append(friend_code_dic)
     res_dic["friend_codes"] = friend_code_list
     res_dic["total"] = len(friend_code_list)
