@@ -101,7 +101,7 @@ def delete_game_title(game_title: str) -> None:
 def get_game_titles():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT title FROM friend_code_games")
+    cur.execute("SELECT title FROM friend_code_games ORDER BY title")
     result = cur.fetchall()
     return result
 
