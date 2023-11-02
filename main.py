@@ -122,6 +122,7 @@ async def add_game(
 async def delete_game(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)], game: Game
 ):
+    db.delete_game_title(game.game_title)
     return game
 
 
