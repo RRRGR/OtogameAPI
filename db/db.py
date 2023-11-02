@@ -91,7 +91,7 @@ def insert_game_title(game_title: str) -> None:
 def delete_game_title(game_title: str) -> None:
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM friend_code_games WHERE game_id = ?;", (game_title,))
+    cur.execute("DELETE FROM friend_code_games WHERE title = ?;", (game_title,))
     conn.commit()
     cur.close()
     conn.close()
