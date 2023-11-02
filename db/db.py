@@ -92,6 +92,7 @@ def delete_game_title(game_title: str) -> None:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM friend_code_games WHERE game_id = ?;", (game_title,))
+    conn.commit()
     cur.close()
     conn.close()
     return
