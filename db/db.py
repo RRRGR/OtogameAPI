@@ -195,7 +195,7 @@ def delete_friend_code(user_id: int, game_title: str) -> None:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        "DELETE FROM friend_codes WHERE user_id = ? AND game_id = (SELECT game_id FROM frined_code_games WHERE title = ?);",
+        "DELETE FROM friend_codes WHERE user_id = ? AND game_id = (SELECT game_id FROM friend_code_games WHERE title = ?);",
         (user_id, game_title),
     )
     conn.commit()
