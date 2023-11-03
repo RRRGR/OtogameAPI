@@ -26,6 +26,12 @@ class FriendCodeDeletion(BaseModel):
     game_title: str
 
 
+class MessageLog(BaseModel):
+    guild_id: int
+    channel_id: int
+    user_id: int
+
+
 app = FastAPI()
 security = HTTPBasic()
 load_dotenv()
@@ -111,7 +117,7 @@ async def get_emoji_member_rank(
 
 
 @app.post("/friend-code/game/")
-async def add_game(
+async def insert_game(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)], game: Game
 ):
     db.insert_game_title(game.game_title)
@@ -185,6 +191,41 @@ async def get_friend_code(
     res_dic["friend_codes"] = friend_code_list
     res_dic["total"] = len(friend_code_list)
 
+    return res_dic
+
+
+@app.post("/message/log")
+async def insert_message_log(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    message_log: MessageLog,
+):
+    db.insert_message_log(
+        message_log.guild_id, message_log.channel_id, message_log.user_id
+    )
+    return message_log
+
+
+@app.get("/message/count")
+async def get_message_log_count(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    guild_id: int,
+    user_id: int,
+    hours: int,
+    channel_id: int | None = None,
+):
+    result = db.get_message_count_by_guild_and_user_id(guild_id, user_id, hours)
+    res_dic = {}
+    res_dic["guild_id"] = guild_id
+    res_dic["user_id"] = user_id
+    res_dic["hours"] = hours
+    message_count_list = []
+    for message_count_tuple in result:
+        message_count_dic = {}
+        message_count_dic["date"] = message_count_tuple[0]
+        message_count_dic["count"] = message_count_tuple[1]
+        message_count_list.append(message_count_dic)
+    res_dic["message_count"] = message_count_list
+    res_dic["total_days"] = len(message_count_dic)
     return res_dic
 
 

@@ -202,3 +202,45 @@ def delete_friend_code(user_id: int, game_title: str) -> None:
     cur.close()
     conn.close()
     return
+
+
+def insert_message_log(
+    guild_id: int,
+    channel_id: int,
+    user_id: int,
+) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "INSERT INTO message_log (guild_id, channel_id, user_id) VALUES (?, ?, ?)",
+        (
+            guild_id,
+            channel_id,
+            user_id,
+        ),
+    )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return
+
+
+def get_message_count_by_guild_and_user_id(guild_id: int, user_id: int, hours: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT DATE_FORMAT(sent_at, '%Y-%m-%d') AS time_interval, COUNT(id) AS id_count FROM message_log WHERE guild_id = ? AND user_id = ? AND sent_at >= DATE_SUB(NOW(), INTERVAL ? HOUR) GROUP BY time_interval;",
+        (
+            guild_id,
+            user_id,
+            hours,
+        ),
+    )
+
+    result = cur.fetchall()
+
+    cur.close()
+    conn.close()
+    return result
