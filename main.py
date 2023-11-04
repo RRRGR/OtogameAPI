@@ -225,7 +225,10 @@ async def get_message_log_count(
         message_count_dic["count"] = message_count_tuple[1]
         message_count_list.append(message_count_dic)
     res_dic["message_count"] = message_count_list
-    res_dic["total_days"] = len(message_count_dic)
+    try:
+        res_dic["total_days"] = len(message_count_dic)
+    except UnboundLocalError:
+        res_dic["total_days"] = 0
     return res_dic
 
 
