@@ -6,6 +6,7 @@ import uvicorn
 import db.db as db
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import Annotated
@@ -32,6 +33,14 @@ class MessageLog(BaseModel):
     user_id: int
 
 
+class Advent(BaseModel):
+    user_id: int
+    author: str | None
+    title: str | None
+    url: str | None
+    date_str: str
+
+
 app = FastAPI()
 security = HTTPBasic()
 load_dotenv()
@@ -43,6 +52,23 @@ HOST = getenv("HOST")
 PORT = int(getenv("PORT"))
 API_USERNAME = getenv("API_USERNAME")
 API_PASSWORD = getenv("API_PASSWORD")
+ORIGIN1 = getenv("ORIGIN1")
+ORIGIN2 = getenv("ORIGIN2")
+ORIGIN3 = getenv("ORIGIN3")
+
+origins = [
+    ORIGIN1,
+    ORIGIN2,
+    ORIGIN3,
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_current_username(
@@ -230,6 +256,69 @@ async def get_message_log_count(
     except UnboundLocalError:
         res_dic["total_days"] = 0
     return res_dic
+
+
+@app.get("/advent/event")
+async def get_advent_by_id_and_date(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    user_id: int,
+    date_str: str,
+):
+    result = db.get_advent_by_id_and_date(user_id, date_str)
+    res_dic = {}
+    events_list = []
+    for events_tuple in result:
+        events_dic = {}
+        events_dic["user_id"] = events_tuple[1]
+        events_dic["author"] = events_tuple[2]
+        events_dic["title"] = events_tuple[3]
+        events_dic["url"] = events_tuple[4]
+        date_str = events_tuple[5].strftime("%Y-%m-%d")
+        events_dic["date_str"] = date_str
+        events_list.append(events_dic)
+    res_dic["events"] = events_list
+    res_dic["total"] = len(events_list)
+    return res_dic
+
+
+@app.put("/advent/event")
+async def upsert_advent(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)], advent: Advent
+):
+    db.upsert_advent(
+        advent.user_id, advent.author, advent.title, advent.url, advent.date_str
+    )
+    return advent
+
+
+@app.get("/advent/events")
+async def get_advent_by_year(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)], year: int
+):
+    result = db.get_advent_by_year(year)
+    res_dic = {}
+    events_list = []
+    for events_tuple in result:
+        events_dic = {}
+        events_dic["user_id"] = events_tuple[1]
+        events_dic["author"] = events_tuple[2]
+        events_dic["title"] = events_tuple[3]
+        events_dic["url"] = events_tuple[4]
+        date_str = events_tuple[5].strftime("%Y-%m-%d")
+        events_dic["date_str"] = date_str
+        events_list.append(events_dic)
+    res_dic["events"] = events_list
+    res_dic["year"] = year
+    res_dic["total"] = len(events_list)
+    return res_dic
+
+
+@app.delete("/advent/event")
+async def delete_advent(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)], advent: Advent
+):
+    db.delete_advent(advent.user_id, advent.date_str)
+    return advent
 
 
 if __name__ == "__main__":

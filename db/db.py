@@ -1,3 +1,4 @@
+import datetime
 import mariadb
 import sys
 from main import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
@@ -244,3 +245,78 @@ def get_message_count_by_guild_and_user_id(guild_id: int, user_id: int, hours: i
     cur.close()
     conn.close()
     return result
+
+
+def get_advent_by_year(year: int):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM advent WHERE YEAR(date) = ?", (year,))
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_advent_by_id_and_date(user_id: int, date_str: str):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    cur.execute(
+        "SELECT * FROM advent WHERE user_id = ? AND date = ?", (user_id, date_obj)
+    )
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def upsert_advent(
+    user_id: int, author: str, title: str | None, url: str | None, date_str: str
+):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if title is None:
+        title = ""
+    if url is None:
+        url = ""
+    date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    result = get_advent_by_id_and_date(user_id, date_str)
+    if result:
+        cur.execute(
+            "UPDATE advent SET author = ?, title = ?, url = ? WHERE user_id = ? AND date = ?;",
+            (author, title, url, user_id, date_obj),
+        )
+    else:
+        cur.execute(
+            "INSERT INTO advent (user_id, author, title, url, date) VALUES (?, ?, ?, ?, ?)",
+            (user_id, author, title, url, date_obj),
+        )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return
+
+
+def delete_advent(user_id: int, date_str: str):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    cur.execute(
+        "DELETE FROM advent WHERE user_id = ? and date = ?;",
+        (
+            user_id,
+            date_obj,
+        ),
+    )
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return
