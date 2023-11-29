@@ -251,7 +251,7 @@ def get_advent_by_year(year: int):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM advent WHERE YEAR(date) = ?", (year,))
+    cur.execute("SELECT * FROM advent WHERE YEAR(date) = ? ORDER BY date", (year,))
 
     result = cur.fetchall()
     cur.close()
