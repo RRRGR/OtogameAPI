@@ -104,6 +104,8 @@ def get_game_titles():
     cur = conn.cursor()
     cur.execute("SELECT title FROM friend_code_games ORDER BY title")
     result = cur.fetchall()
+    cur.close()
+    conn.close()
     return result
 
 
