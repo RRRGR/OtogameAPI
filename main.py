@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import json
 from os import getenv
 import secrets
 import uvicorn
@@ -48,6 +49,7 @@ DB_USER = getenv("DB_USER")
 DB_PASSWORD = getenv("DB_PASSWORD")
 DB_HOST = getenv("DB_HOST")
 DB_NAME = getenv("DB_NAME")
+RGDB_NAME = getenv("RGDB_NAME")
 HOST = getenv("HOST")
 PORT = int(getenv("PORT"))
 API_USERNAME = getenv("API_USERNAME")
@@ -319,6 +321,93 @@ async def delete_advent(
 ):
     db.delete_advent(advent.user_id, advent.date_str)
     return advent
+
+
+@app.get("/rhythmgamedb/songs")
+async def get_song_by_title_and_game_name(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    title: str,
+    game_name: str | None = None,
+    artist: str | None = None,
+):
+    result = db.get_song_by_title_and_game_name_and_artist(title, game_name, artist)
+    res_dic = {}
+    songs_list = []
+    for song_tuple in result:
+        song_dic = {}
+        song_dic["song_id"] = song_tuple[0]
+        game_id = song_tuple[1]
+        song_dic["game_id"] = game_id
+        song_dic["game_name"] = db.get_game_name_by_id(game_id)
+        song_dic["title"] = song_tuple[2]
+        song_dic["category"] = song_tuple[3]
+        song_dic["artist"] = song_tuple[4]
+        song_dic["jacket_image"] = song_tuple[5]
+        song_dic["length"] = song_tuple[6]
+        song_dic["bpm_main"] = song_tuple[7]
+        song_dic["bpm_min"] = song_tuple[8]
+        song_dic["bpm_max"] = song_tuple[9]
+        song_dic["description"] = song_tuple[10]
+        song_dic["song_url"] = song_tuple[11]
+        song_dic["wiki_url"] = song_tuple[12]
+        song_dic["release_date"] = song_tuple[13]
+        song_dic["charts"] = json.loads(song_tuple[14])
+        songs_list.append(song_dic)
+    res_dic["songs"] = songs_list
+    res_dic["total"] = len(songs_list)
+
+    return res_dic
+
+
+@app.get("/rhythmgamedb/random-song")
+async def get_random_song(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+    game_name: str | None = None,
+    level: str | None = None,
+):
+    result = db.get_random_song(game_name, level)
+    res_dic = {}
+    songs_list = []
+    for song_tuple in result:
+        song_dic = {}
+        song_dic["song_id"] = song_tuple[0]
+        game_id = song_tuple[1]
+        song_dic["game_id"] = game_id
+        song_dic["game_name"] = db.get_game_name_by_id(game_id)
+        song_dic["title"] = song_tuple[2]
+        song_dic["category"] = song_tuple[3]
+        song_dic["artist"] = song_tuple[4]
+        song_dic["jacket_image"] = song_tuple[5]
+        song_dic["length"] = song_tuple[6]
+        song_dic["bpm_main"] = song_tuple[7]
+        song_dic["bpm_min"] = song_tuple[8]
+        song_dic["bpm_max"] = song_tuple[9]
+        song_dic["description"] = song_tuple[10]
+        song_dic["song_url"] = song_tuple[11]
+        song_dic["wiki_url"] = song_tuple[12]
+        song_dic["release_date"] = song_tuple[13]
+        song_dic["charts"] = json.loads(song_tuple[14])
+        songs_list.append(song_dic)
+    res_dic["songs"] = songs_list
+    res_dic["total"] = len(songs_list)
+
+    return res_dic
+
+
+@app.get("/rhythmgamedb/game-names")
+async def get_all_game_names(
+    credentials: Annotated[HTTPBasicCredentials, Depends(security)],
+):
+    result = db.get_all_game_names()
+    res_dic = {}
+    game_name_list = []
+    for game_name_tuple in result:
+        game_name_dic = {}
+        game_name_dic["game_name"] = game_name_tuple[0]
+        game_name_list.append(game_name_dic)
+    res_dic["game_names"] = game_name_list
+    res_dic["total"] = len(game_name_list)
+    return res_dic
 
 
 if __name__ == "__main__":

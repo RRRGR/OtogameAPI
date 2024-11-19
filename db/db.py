@@ -1,7 +1,7 @@
 import datetime
 import mariadb
 import sys
-from main import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+from main import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, RGDB_NAME
 
 
 def get_connection() -> mariadb.Connection | None:
@@ -11,6 +11,20 @@ def get_connection() -> mariadb.Connection | None:
             user=DB_USER,
             password=DB_PASSWORD,
             database=DB_NAME,
+        )
+        return conn
+    except mariadb.Error as e:
+        print(f"Error connecting to MariaDB Platform: {e}")
+        sys.exit(1)
+
+
+def get_rgdb_connection() -> mariadb.Connection | None:
+    try:
+        conn = mariadb.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=RGDB_NAME,
         )
         return conn
     except mariadb.Error as e:
@@ -322,3 +336,146 @@ def delete_advent(user_id: int, date_str: str):
     cur.close()
     conn.close()
     return
+
+
+def get_game_id(game_name: str) -> int | None:
+    conn = get_rgdb_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT game_id FROM Games WHERE game_name = ?", (game_name,))
+        result = cur.fetchone()
+        if result:
+            return result[0]
+        else:
+            print(f"No game found with name: {game_name}")
+            return None
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+        return None
+
+
+def get_all_game_names():
+    conn = get_rgdb_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT game_name FROM Games")
+        result = cur.fetchall()
+        if result:
+            return result
+        else:
+            print(f"No game found.")
+            return None
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+        return None
+
+
+def get_game_name_by_id(game_id: int):
+    conn = get_rgdb_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT game_name FROM Games WHERE game_id = ?", (game_id,))
+        result = cur.fetchone()
+        if result:
+            return result[0]
+        else:
+            print(f"No game found with name: {game_id}")
+            return None
+    except mariadb.Error as e:
+        print(f"Error: {e}")
+        return None
+
+
+def get_song_by_title_and_game_name_and_artist(
+    title: str,
+    game_name: str | None,
+    artist: str | None,
+):
+    conn = get_rgdb_connection()
+    cur = conn.cursor()
+    query = """
+            SELECT 
+                Songs.*,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'chart_id', Charts.chart_id,
+                        'difficulty', Charts.difficulty,
+                        'const', Charts.const,
+                        'level', Charts.level,
+                        'num_notes', Charts.num_notes,
+                        'designer', Charts.designer,
+                        'description', Charts.description
+                    )
+                ) AS charts
+            FROM 
+                Songs
+            LEFT JOIN 
+                Charts ON Songs.song_id = Charts.song_id
+            WHERE 
+                Songs.title LIKE ?
+        """
+    title = f"%{title}%"
+    query_tuple_list = [title]
+    if game_name:
+        game_id = get_game_id(game_name)
+        query += " AND Songs.game_id = ?"
+        query_tuple_list.append(game_id)
+    if artist:
+        artist = f"%{artist}%"
+        query += " AND Songs.artist LIKE ?"
+        query_tuple_list.append(artist)
+    query += " GROUP BY Songs.song_id"
+    cur.execute(query, tuple(query_tuple_list))
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
+
+
+def get_random_song(
+    game_name: str | None,
+    level: str | None,
+):
+    conn = get_rgdb_connection()
+    cur = conn.cursor()
+    query = """
+            SELECT 
+                Songs.*,
+                JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'chart_id', Charts.chart_id,
+                        'difficulty', Charts.difficulty,
+                        'const', Charts.const,
+                        'level', Charts.level,
+                        'num_notes', Charts.num_notes,
+                        'designer', Charts.designer,
+                        'description', Charts.description
+                    )
+                ) AS charts
+            FROM 
+                Songs
+            LEFT JOIN 
+                Charts ON Songs.song_id = Charts.song_id
+        """
+    query_tuple_list = []
+    if game_name:
+        game_id = get_game_id(game_name)
+        query += " WHERE Songs.game_id = ?"
+        query_tuple_list.append(game_id)
+        if level:
+            query += " AND Charts.level = ?"
+            query_tuple_list.append(level)
+    elif level:
+        query += " WHERE Charts.level = ?"
+        query_tuple_list.append(level)
+    query += " GROUP BY Songs.song_id ORDER BY RAND() LIMIT 1"
+    if len(query_tuple_list) == 0:
+        cur.execute(query)
+    else:
+        cur.execute(query, tuple(query_tuple_list))
+
+    result = cur.fetchall()
+    cur.close()
+    conn.close()
+    return result
