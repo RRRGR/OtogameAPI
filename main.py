@@ -326,7 +326,7 @@ async def delete_advent(
 @app.get("/rhythmgamedb/songs")
 async def get_song_by_title_and_game_name(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
-    title: str,
+    title: str | None = None,
     game_name: str | None = None,
     artist: str | None = None,
 ):

@@ -387,7 +387,7 @@ def get_game_name_by_id(game_id: int):
 
 
 def get_song_by_title_and_game_name_and_artist(
-    title: str,
+    title: str | None,
     game_name: str | None,
     artist: str | None,
 ):
@@ -411,11 +411,13 @@ def get_song_by_title_and_game_name_and_artist(
                 Songs
             LEFT JOIN 
                 Charts ON Songs.song_id = Charts.song_id
-            WHERE 
-                Songs.title LIKE ?
+            WHERE 1 = 1
         """
-    title = f"%{title}%"
-    query_tuple_list = [title]
+    query_tuple_list = []
+    if title is not None:
+        title = f"%{title}%"
+        query += " AND Songs.title LIKE ?"
+        query_tuple_list.append(title)
     if game_name:
         game_id = get_game_id(game_name)
         query += " AND Songs.game_id = ?"
