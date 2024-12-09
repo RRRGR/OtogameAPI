@@ -404,6 +404,7 @@ def get_song_by_title_and_game_name_and_artist(
                         'level', Charts.level,
                         'num_notes', Charts.num_notes,
                         'designer', Charts.designer,
+                        'chart_image_url', Charts.chart_image_url,
                         'description', Charts.description
                     )
                 ) AS charts
